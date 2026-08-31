@@ -1,0 +1,8 @@
+{
+  "name": "Flat mill D3 outside",
+  "type": "MTOOL_FLAT",
+  "diameter": 3.0,
+  "flute_length": 9.0,
+  "length": 24.0,
+  "shank_diameter": 3.0
+}
