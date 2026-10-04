@@ -5,6 +5,7 @@ import rhinoscriptsyntax as rs
 
 GROUP_GAP_MM = 80.0
 TARGET_LAYER_PREFIX = "List"
+TEST_LAYER_NAME = "Test"
 BOUNDS_TOLERANCE_MM = 0.01
 GRID_RECT_WIDTH_MM = 1081.5
 GRID_RECT_HEIGHT_MM = 2600.0
@@ -107,7 +108,11 @@ def bounds_contains(outer, inner, tolerance):
 
 
 def is_generated_layer(layer):
-    return layer.startswith(TARGET_LAYER_PREFIX + "_") or layer == GUIDE_LAYER_NAME
+    return (
+        layer.startswith(TARGET_LAYER_PREFIX + "_")
+        or layer == GUIDE_LAYER_NAME
+        or layer == TEST_LAYER_NAME
+    )
 
 
 def is_source_curve(obj, include_locked):
@@ -301,6 +306,73 @@ def ensure_layer(layer_name):
     return layer_name
 
 
+def ensure_unlocked_layer(layer_name, color=None):
+    if not rs.IsLayer(layer_name):
+        rs.AddLayer(layer_name, color=color)
+    elif rs.LayerLocked(layer_name):
+        rs.LayerLocked(layer_name, False)
+    return layer_name
+
+
+def add_rectangle(min_x, min_y, width, height, layer_name):
+    points = [
+        (min_x, min_y, 0.0),
+        (min_x + width, min_y, 0.0),
+        (min_x + width, min_y + height, 0.0),
+        (min_x, min_y + height, 0.0),
+        (min_x, min_y, 0.0),
+    ]
+    curve = rs.AddPolyline(points)
+    if curve:
+        rs.ObjectLayer(curve, layer_name)
+    return curve
+
+
+def add_circle(center_x, center_y, diameter, layer_name):
+    curve = rs.AddCircle((center_x, center_y, 0.0), diameter / 2.0)
+    if curve:
+        rs.ObjectLayer(curve, layer_name)
+    return curve
+
+
+def create_test_layer():
+    ensure_unlocked_layer(TEST_LAYER_NAME)
+
+    old_objects = rs.ObjectsByLayer(TEST_LAYER_NAME) or []
+    if old_objects:
+        rs.DeleteObjects(old_objects)
+
+    previous_layer = rs.CurrentLayer()
+    rs.CurrentLayer(TEST_LAYER_NAME)
+    created = []
+    try:
+        # CAM classification control geometry.
+        created.append(add_rectangle(20.0, 20.0, 200.0, 200.0, TEST_LAYER_NAME))
+        created.append(add_rectangle(201.0, 21.0, 6.0, 198.0, TEST_LAYER_NAME))
+
+        created.append(add_circle(60.414, 212.0, 4.9, TEST_LAYER_NAME))
+        created.append(add_circle(156.414, 212.0, 4.9, TEST_LAYER_NAME))
+
+        created.append(add_circle(28.0, 89.049, 8.0, TEST_LAYER_NAME))
+        created.append(add_circle(28.0, 121.049, 5.0, TEST_LAYER_NAME))
+        created.append(add_circle(28.0, 57.049, 5.0, TEST_LAYER_NAME))
+
+        created.append(add_circle(62.0, 121.049, 15.0, TEST_LAYER_NAME))
+        created.append(add_circle(62.0, 57.049, 15.0, TEST_LAYER_NAME))
+
+        created.append(add_circle(40.0, 171.125, 3.0, TEST_LAYER_NAME))
+        created.append(add_circle(72.0, 171.125, 3.0, TEST_LAYER_NAME))
+
+        created.append(add_circle(120.0, 41.5, 35.0, TEST_LAYER_NAME))
+    finally:
+        if previous_layer and rs.IsLayer(previous_layer):
+            rs.CurrentLayer(previous_layer)
+
+    created = [item for item in created if item]
+    log("{} layer created: objects={}.".format(TEST_LAYER_NAME, len(created)))
+    return len(created)
+
+
 def copy_group_to_layer(group, layer_name):
     ensure_layer(layer_name)
     copied = []
@@ -372,6 +444,7 @@ def run():
         log(
             "DONE: copied {} objects to {} layers.".format(len(all_copies), len(groups))
         )
+        create_test_layer()
         return True
     finally:
         rs.EnableRedraw(True)

@@ -2,7 +2,7 @@
 import re
 
 
-CAM_LAYER_PATTERN = re.compile(r"^List_\d+$")
+CAM_LAYER_PATTERN = re.compile(r"^(List_\d+|test)$", re.IGNORECASE)
 
 
 def is_cam_layer(layer_name):
@@ -13,6 +13,8 @@ def layer_sort_key(layer_name):
     match = re.match(r"^List_(\d+)$", layer_name or "")
     if match:
         return (0, int(match.group(1)))
+    if (layer_name or "").lower() == "test":
+        return (0, 0)
     return (1, layer_name or "")
 
 

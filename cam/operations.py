@@ -9,6 +9,12 @@ from MecSoftCAM.Types import ContourCutSideType
 from MecSoftCAM.Types import ContourEngRetType
 from MecSoftCAM.Types import ContourEntryType
 from MecSoftCAM.Types import ContourExitType
+from MecSoftCAM.Types import ContourStartPointType
+from MecSoftCAM.Types import ContourStepType
+from MecSoftCAM.Types import CornerCleanupType
+from MecSoftCAM.Types import CutType
+from MecSoftCAM.Types import PocketOffsetType
+from MecSoftCAM.Types import TraversalCutType
 
 
 class ProfilingConfig(object):
@@ -30,6 +36,14 @@ class ProfilingConfig(object):
         self.stock_allowance = 0.0
         self.spindle_rpm = 18000.0
         self.cut_direction = "climb"
+        self.cut_angle = None
+        self.stepover_angle = None
+        self.stepover_distance = None
+        self.start_point = None
+        self.cleanup_pass = None
+        self.corner_cleanup = None
+        self.pocket_offset_type = None
+        self.force_parallel_pocket = False
 
 
 def set_param(log, name, setter, value):
@@ -68,6 +82,12 @@ def apply_cut_side_params(log, mop):
 
 def cut_direction_value(cut_direction):
     normalized = (cut_direction or "climb").lower()
+    if normalized in ("mixed", "both", "climbconventional", "climb_conventional"):
+        return getattr(
+            ContourCutDirection,
+            "CONTOUR_CLIMBCONVENTIONAL",
+            ContourCutDirection.CONTOUR_CLIMB,
+        )
     if normalized in ("conventional", "against", "upcut"):
         return getattr(
             ContourCutDirection,
@@ -109,19 +129,77 @@ def apply_feed_params(mop, config):
 
 
 def apply_stock_allowance_params(log, mop, config):
-    return set_optional_param(
-        log,
-        mop,
-        [
-            "SetStockAllowance",
-            "SetStockToLeave",
-            "SetXYStockAllowance",
-            "SetPartStock",
-            "SetCutStock",
-            "SetOffsetStock",
-        ],
-        config.stock_allowance,
+    method_names = [
+        "SetStock",
+        "SetStockParam",
+        "SetStockAllowance",
+        "SetStockAllowanceParam",
+        "SetStockToLeave",
+        "SetStockToLeaveParam",
+        "SetXYStock",
+        "SetXYStockParam",
+        "SetXYStockAllowance",
+        "SetXYStockAllowanceParam",
+        "SetPartStock",
+        "SetPartStockParam",
+        "SetCutStock",
+        "SetCutStockParam",
+        "SetOffsetStock",
+        "SetOffsetStockParam",
+        "SetRegionStock",
+        "SetRegionStockParam",
+        "SetGlobalStock",
+        "SetGlobalStockParam",
+        "SetMOpStock",
+        "SetMOpStockParam",
+    ]
+    for method_name in method_names:
+        setter = getattr(mop, method_name, None)
+        if not setter:
+            continue
+
+        try:
+            ok = setter(config.stock_allowance)
+        except Exception as ex:
+            log("ERROR: {} raised {}".format(method_name, ex))
+            continue
+
+        if ok is not False:
+            log("{} set to {}".format(method_name, config.stock_allowance))
+            return True
+        log("WARNING: {} was not accepted: {}".format(method_name, config.stock_allowance))
+
+    property_names = [
+        "Stock",
+        "StockParam",
+        "StockAllowance",
+        "StockToLeave",
+        "XYStock",
+        "XYStockAllowance",
+        "PartStock",
+        "CutStock",
+        "OffsetStock",
+        "RegionStock",
+        "GlobalStock",
+    ]
+    for property_name in property_names:
+        if not hasattr(mop, property_name):
+            continue
+        try:
+            setattr(mop, property_name, config.stock_allowance)
+        except Exception as ex:
+            log("ERROR: {} property raised {}".format(property_name, ex))
+            continue
+        log("{} property set to {}".format(property_name, config.stock_allowance))
+        return True
+
+    log(
+        "WARNING: stock allowance was not set. Matching methods: {}".format(
+            ", ".join(available_method_names(mop, ["stock", "allowance"]))
+            or "none"
+        )
     )
+    return False
 
 
 def apply_spindle_params(log, mop, config):
@@ -182,6 +260,7 @@ def apply_drill_params(log, mop, config):
 
 
 def apply_pocket_params(log, mop, config):
+    set_optional_param(log, mop, ["SetTolerance"], config.tolerance)
     set_optional_param(log, mop, ["SetCutGeomLocation"], config.CUT_GEOM_LOCATION_TOP)
     set_optional_param(log, mop, ["SetTopZ", "SetCutStartZ"], config.top_z)
     set_optional_param(
@@ -213,8 +292,225 @@ def apply_pocket_params(log, mop, config):
         ["SetCutDir", "SetCutDirection"],
         cut_direction_value(config.cut_direction),
     )
+    if config.force_parallel_pocket:
+        apply_parallel_pocket_params(log, mop)
+    if config.cut_angle is not None:
+        set_optional_param(
+            log,
+            mop,
+            [
+                "SetCutAngle",
+                "SetCutPatternAngle",
+                "SetPocketCutAngle",
+                "SetRasterAngle",
+                "SetParallelCutAngle",
+            ],
+            config.cut_angle,
+        )
+    if config.stepover_angle is not None:
+        set_optional_param(
+            log,
+            mop,
+            [
+                "SetStepOverAngle",
+                "SetStepoverAngle",
+                "SetLaceAngle",
+                "SetScanAngle",
+                "SetPathSpacingAngle",
+                "SetPocketStepOverAngle",
+                "SetPocketStepoverAngle",
+                "SetPocketLaceAngle",
+                "SetPocketScanAngle",
+            ],
+            config.stepover_angle,
+        )
+    if config.stepover_distance is not None:
+        set_first_optional_value(
+            log,
+            mop,
+            ["SetStepoverType"],
+            enum_or_values(
+                ContourStepType,
+                ["STEPDIST", "CONTOUR_STEPDIST"],
+                [1, 0, 2],
+            ),
+        )
+        set_optional_param(
+            log,
+            mop,
+            [
+                "SetStepDistance",
+                "SetStepoverDistance",
+                "SetStepOverDistance",
+                "SetPocketStepDistance",
+                "SetPocketStepoverDistance",
+            ],
+            config.stepover_distance,
+        )
+    if config.start_point == "bottom":
+        set_optional_param(
+            log,
+            mop,
+            ["SetStartPoint", "SetStartPointParam", "SetMOpStartPointParam"],
+            ContourStartPointType.CONTOUR_START_BOTTOM,
+        )
+    if config.cleanup_pass is not None:
+        set_optional_param(
+            log,
+            mop,
+            ["SetMOpCleanupPassParam", "SetCleanupPass", "SetCleanupPassParam"],
+            config.cleanup_pass,
+        )
+    if config.corner_cleanup == "none":
+        set_optional_param(
+            log,
+            mop,
+            ["SetMOpCornerCleanupParam", "SetCornerCleanup", "SetCornerCleanupParam"],
+            CornerCleanupType.CLEANUP_NONE,
+        )
+    if config.pocket_offset_type == "inside":
+        set_optional_param(
+            log,
+            mop,
+            ["SetPocketOffsetType"],
+            PocketOffsetType.CONTOUR_START_INSIDE,
+        )
+    elif config.pocket_offset_type == "outside":
+        set_optional_param(
+            log,
+            mop,
+            ["SetPocketOffsetType"],
+            PocketOffsetType.CONTOUR_START_OUTSIDE,
+        )
     apply_stock_allowance_params(log, mop, config)
     apply_spindle_params(log, mop, config)
+
+
+def available_method_names(target, patterns):
+    names = []
+    for name in dir(target):
+        lower_name = name.lower()
+        if any(pattern in lower_name for pattern in patterns):
+            names.append(name)
+    return sorted(names)
+
+
+def set_first_optional_value(log, target, method_names, values):
+    for method_name in method_names:
+        setter = getattr(target, method_name, None)
+        if not setter:
+            continue
+
+        for value in values:
+            try:
+                ok = setter(value)
+            except Exception:
+                continue
+            if ok is not False:
+                log("{} accepted value {}".format(method_name, value))
+                return True
+
+    return False
+
+
+def enum_or_values(enum_type, names, fallback_values):
+    values = []
+    for name in names:
+        value = getattr(enum_type, name, None)
+        if value is not None:
+            values.append(value)
+    values.extend(fallback_values)
+    return values
+
+
+def apply_parallel_pocket_params(log, mop):
+    applied = False
+
+    if set_first_optional_value(
+        log,
+        mop,
+        ["SetMOpCutTypeParam"],
+        enum_or_values(
+            CutType,
+            ["CONTOUR_LINEAR", "CUTTYPE_LINEAR", "LINEAR"],
+            [1, 0, 2],
+        ),
+    ):
+        applied = True
+
+    if set_first_optional_value(
+        log,
+        mop,
+        ["SetTraversalCutType"],
+        enum_or_values(
+            TraversalCutType,
+            ["ZIGZAG", "ZIG"],
+            [0, 1],
+        ),
+    ):
+        applied = True
+
+    if set_first_optional_value(
+        log,
+        mop,
+        ["SetStepoverType"],
+        enum_or_values(
+            ContourStepType,
+            ["STEPDIST", "CONTOUR_STEPDIST"],
+            [1, 0, 2],
+        ),
+    ):
+        applied = True
+
+    if applied:
+        return True
+
+    if set_first_optional_value(
+        log,
+        mop,
+        [
+            "SetCutPattern",
+            "SetCutPatternType",
+            "SetPocketCutPattern",
+            "SetPocketCutPatternType",
+            "SetMachiningPattern",
+            "SetMachiningPatternType",
+            "SetCutMethod",
+            "SetPocketCutMethod",
+            "SetPocketingMethod",
+            "SetPocketingType",
+            "SetToolpathPattern",
+            "SetToolpathPatternType",
+        ],
+        [
+            "parallel",
+            "Parallel",
+            "PARALLEL",
+            "linear",
+            "Linear",
+            "LINEAR",
+            "raster",
+            "Raster",
+            "RASTER",
+            1,
+            2,
+            3,
+        ],
+    ):
+        return True
+
+    log(
+        "WARNING: parallel pocket pattern was not accepted. Matching methods: {}".format(
+            ", ".join(
+                available_method_names(
+                    mop,
+                    ["pattern", "pocket", "raster", "parallel", "method", "type"],
+                )
+            )
+            or "none"
+        )
+    )
+    return False
 
 
 def create_drilling(log, sync_database, mop_name, tool, config):
@@ -279,6 +575,36 @@ def create_pocket_profiling(log, sync_database, mop_name, tool, config):
         return None
 
     log("Pocket MOp created and regenerated.")
+    return mop
+
+
+def create_2_5_pocketing(log, sync_database, mop_name, tool, config):
+    mop = create_mop_from_candidates(
+        log,
+        [
+            "Create2AxPocketingMOp",
+        ],
+    )
+    if not mop:
+        log("ERROR: 2 Axis Pocketing MOp is unavailable.")
+        return None
+
+    set_param(log, "SetName", mop.SetName, mop_name)
+    mop.Tool = tool
+    apply_pocket_params(log, mop, config)
+
+    if not add_selected_geometry(log, mop):
+        return None
+
+    sync_database()
+    apply_pocket_params(log, mop, config)
+    set_param(log, "SetName after geometry", mop.SetName, mop_name)
+
+    if not MOpManager.RegenerateMOp(mop):
+        log("ERROR: 2 Axis Pocketing toolpath regeneration failed.")
+        return None
+
+    log("2 Axis Pocketing MOp created and regenerated.")
     return mop
 
 
