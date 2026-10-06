@@ -82,6 +82,7 @@ class RhinoCamJob(object):
         config.cut_feed = base_config.cut_feed
         config.retract_feed = base_config.retract_feed
         config.departure_feed = base_config.departure_feed
+        config.transfer_feed = base_config.transfer_feed
         config.stock_allowance = base_config.stock_allowance
         config.spindle_rpm = base_config.spindle_rpm
         config.cut_direction = base_config.cut_direction
@@ -108,6 +109,7 @@ class RhinoCamJob(object):
         config.cut_feed = settings["cut_feed"]
         config.retract_feed = settings["retract_feed"]
         config.departure_feed = settings["departure_feed"]
+        config.transfer_feed = settings["transfer_feed"]
         return config
 
     def perpendicular_angle(self, angle):

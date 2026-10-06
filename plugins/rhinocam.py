@@ -35,6 +35,20 @@ def load_tool_config(path):
         return json.load(stream)
 
 
+def set_optional_tool_param(tool, method_names, value):
+    for method_name in method_names:
+        setter = getattr(tool, method_name, None)
+        if not setter:
+            continue
+        try:
+            result = setter(float(value))
+        except Exception:
+            continue
+        if result is not False:
+            return True
+    return False
+
+
 def create_mill_tool(tool_config):
     tool_type_name = tool_config.get("type", "MTOOL_FLAT")
     tool_type = MILL_TOOL_TYPES.get(tool_type_name, MillToolType.MTOOL_FLAT)
@@ -47,6 +61,17 @@ def create_mill_tool(tool_config):
     tool.SetFluteLen(float(tool_config["flute_length"]))
     tool.SetLen(float(tool_config["length"]))
     tool.SetShankDia(float(tool_config.get("shank_diameter", tool_config["diameter"])))
+    if "shoulder_length" in tool_config:
+        set_optional_tool_param(
+            tool,
+            [
+                "SetShoulderLen",
+                "SetShoulderLength",
+                "SetShoulderLenParam",
+                "SetShoulderLengthParam",
+            ],
+            tool_config["shoulder_length"],
+        )
     ToolManager.SetActiveTool(tool)
     return tool
 
@@ -138,6 +163,15 @@ def mop_manager_method_names():
 def setup_name(setup):
     if not setup:
         return None
+
+    get_setup_name = getattr(MOpManager, "GetMOpSetupName", None)
+    if get_setup_name:
+        try:
+            value = get_setup_name(setup)
+            if value:
+                return value
+        except Exception:
+            pass
 
     for method_name in ("GetName", "Name"):
         value = getattr(setup, method_name, None)
@@ -372,7 +406,9 @@ def all_setups():
     for count_method_name, item_method_name in (
         ("GetMOpSetCount", "GetMOpSet"),
         ("GetMOpSetupCount", "GetMOpSetup"),
+        ("GetMOpSetupCount", "GetMOpSetupByIndex"),
         ("GetMOpSetUpCount", "GetMOpSetUp"),
+        ("GetMOpSetUpCount", "GetMOpSetupByIndex"),
         ("GetSetupCount", "GetSetup"),
     ):
         count_method = getattr(MOpManager, count_method_name, None)
@@ -428,6 +464,53 @@ def all_setups():
             return [setup]
 
     return []
+
+
+def setup_discovery_report():
+    lines = []
+
+    for count_method_name, item_method_name in (
+        ("GetMOpSetupCount", "GetMOpSetupByIndex"),
+        ("GetMOpSetCount", "GetMOpSet"),
+        ("GetMOpSetupCount", "GetMOpSetup"),
+        ("GetMOpSetUpCount", "GetMOpSetUp"),
+        ("GetSetupCount", "GetSetup"),
+    ):
+        count_method = getattr(MOpManager, count_method_name, None)
+        item_method = getattr(MOpManager, item_method_name, None)
+        if not count_method:
+            lines.append("{}: missing".format(count_method_name))
+            continue
+        if not item_method:
+            lines.append("{} + {}: item method missing".format(count_method_name, item_method_name))
+            continue
+
+        try:
+            count = int(count_method())
+        except Exception as ex:
+            lines.append("{}: count error {}".format(count_method_name, ex))
+            continue
+
+        lines.append("{}: {}".format(count_method_name, count))
+        if count:
+            for index in (0, 1):
+                try:
+                    setup = item_method(index)
+                    lines.append("{}({}): {}".format(item_method_name, index, setup))
+                except Exception as ex:
+                    lines.append("{}({}): error {}".format(item_method_name, index, ex))
+
+    for active_method_name in ("GetActiveSetup", "GetActiveMOpSet", "GetActiveMOpSetup"):
+        active_method = getattr(MOpManager, active_method_name, None)
+        if not active_method:
+            lines.append("{}: missing".format(active_method_name))
+            continue
+        try:
+            lines.append("{}: {}".format(active_method_name, active_method()))
+        except Exception as ex:
+            lines.append("{}: error {}".format(active_method_name, ex))
+
+    return "; ".join(lines)
 
 
 def post_process_mop(output_dir, mop):

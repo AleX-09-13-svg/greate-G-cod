@@ -27,14 +27,15 @@ class ProfilingConfig(object):
         self.tolerance = 0.01
         self.clearance_z = 5.0
         self.retract_distance = 1.0
-        self.plunge_feed = 300.0
-        self.approach_feed = 400.0
-        self.engage_feed = 400.0
-        self.cut_feed = 800.0
-        self.retract_feed = 1000.0
-        self.departure_feed = 1000.0
+        self.plunge_feed = 3000.0
+        self.approach_feed = 3000.0
+        self.engage_feed = 3000.0
+        self.cut_feed = 3000.0
+        self.retract_feed = 3000.0
+        self.departure_feed = 3000.0
+        self.transfer_feed = 5000.0
         self.stock_allowance = 0.0
-        self.spindle_rpm = 18000.0
+        self.spindle_rpm = 25872.0
         self.cut_direction = "climb"
         self.cut_angle = None
         self.stepover_angle = None
@@ -126,6 +127,20 @@ def apply_feed_params(mop, config):
     mop.SetCutFeedParam(config.cut_feed)
     mop.SetRetractFeedParam(config.retract_feed)
     mop.SetDepartureFeedParam(config.departure_feed)
+
+
+def apply_transfer_feed_params(log, mop, config):
+    return set_optional_param(
+        log,
+        mop,
+        [
+            "SetTransferFeedParam",
+            "SetTransferFeed",
+            "SetTransferFeedRateParam",
+            "SetTransferFeedRate",
+        ],
+        config.transfer_feed,
+    )
 
 
 def apply_stock_allowance_params(log, mop, config):
@@ -256,6 +271,7 @@ def apply_drill_params(log, mop, config):
     )
     set_optional_param(log, mop, ["SetRetractDistance", "SetRetractZ"], config.retract_distance)
     set_optional_param(log, mop, ["SetPlungeFeedParam", "SetCutFeedParam"], config.plunge_feed)
+    apply_transfer_feed_params(log, mop, config)
     apply_spindle_params(log, mop, config)
 
 
@@ -286,6 +302,7 @@ def apply_pocket_params(log, mop, config):
     set_optional_param(log, mop, ["SetCutFeedParam"], config.cut_feed)
     set_optional_param(log, mop, ["SetRetractFeedParam"], config.retract_feed)
     set_optional_param(log, mop, ["SetDepartureFeedParam"], config.departure_feed)
+    apply_transfer_feed_params(log, mop, config)
     set_optional_param(
         log,
         mop,
@@ -628,6 +645,7 @@ def create_profiling(log, sync_database, mop_name, tool, config, cut_side):
     apply_profiling_cut_side_params(log, mop, cut_side, config.cut_direction)
     apply_clearance_params(log, mop, config)
     apply_feed_params(mop, config)
+    apply_transfer_feed_params(log, mop, config)
     apply_stock_allowance_params(log, mop, config)
     apply_spindle_params(log, mop, config)
     set_param(log, "SetName after geometry", mop.SetName, mop_name)

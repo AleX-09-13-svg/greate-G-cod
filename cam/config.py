@@ -28,7 +28,10 @@ PAZ_DNO_ZADNST_SIDE_SIZES_MM = (6.0, 7.0)
 DEFAULT_STOCK_ALLOWANCE_MM = 0.0
 
 # Обороты шпинделя. Параметр общий для всех УП и всех стратегий.
-SPINDLE_RPM = 18000.0
+SPINDLE_RPM = 25872.0
+
+FEED_RATE_MM_MIN = 3000.0
+TRANSFER_FEED_RATE_MM_MIN = 5000.0
 
 # Подробный лог каждой кривой замедляет запуск на больших файлах.
 LOG_CURVE_SUMMARY = False
@@ -52,72 +55,78 @@ STRATEGIES = {
         "step_down": 2.0,          # Съем по Z за один проход, мм.
         "stock_allowance": 0.0,    # Припуск для этой стратегии, мм.
         "cut_direction": "climb",  # Направление фрезерования.
-        "plunge_feed": 300.0,      # Подача врезания вниз по Z.
-        "approach_feed": 400.0,    # Подача подхода к началу реза.
-        "engage_feed": 400.0,      # Подача входа в материал.
-        "cut_feed": 800.0,         # Рабочая подача резания.
-        "retract_feed": 1000.0,    # Подача отвода инструмента.
-        "departure_feed": 1000.0,  # Подача выхода из реза.
+        "plunge_feed": FEED_RATE_MM_MIN,      # Подача врезания вниз по Z.
+        "approach_feed": FEED_RATE_MM_MIN,    # Подача подхода к началу реза.
+        "engage_feed": FEED_RATE_MM_MIN,      # Подача входа в материал.
+        "cut_feed": FEED_RATE_MM_MIN,         # Рабочая подача резания.
+        "retract_feed": FEED_RATE_MM_MIN,     # Подача отвода инструмента.
+        "departure_feed": FEED_RATE_MM_MIN,   # Подача выхода из реза.
+        "transfer_feed": TRANSFER_FEED_RATE_MM_MIN,  # Подача переходов.
     },
     "vyborka_35_15_5": {
         "depth": 13.0,             # Общая глубина выборки, мм.
         "step_down": 4.0,          # Съем по Z за один проход, мм.
         "stock_allowance": 0.0,    # Припуск для выборки, мм.
         "cut_direction": "climb",  # Направление фрезерования.
-        "plunge_feed": 300.0,      # Подача врезания вниз по Z.
-        "approach_feed": 400.0,    # Подача подхода к началу реза.
-        "engage_feed": 400.0,      # Подача входа в материал.
-        "cut_feed": 800.0,         # Рабочая подача резания.
-        "retract_feed": 1000.0,    # Подача отвода инструмента.
-        "departure_feed": 1000.0,  # Подача выхода из реза.
+        "plunge_feed": FEED_RATE_MM_MIN,      # Подача врезания вниз по Z.
+        "approach_feed": FEED_RATE_MM_MIN,    # Подача подхода к началу реза.
+        "engage_feed": FEED_RATE_MM_MIN,      # Подача входа в материал.
+        "cut_feed": FEED_RATE_MM_MIN,         # Рабочая подача резания.
+        "retract_feed": FEED_RATE_MM_MIN,     # Подача отвода инструмента.
+        "departure_feed": FEED_RATE_MM_MIN,   # Подача выхода из реза.
+        "transfer_feed": TRANSFER_FEED_RATE_MM_MIN,  # Подача переходов.
     },
     "vyborka_8": {
         "depth": 10.0,             # Общая глубина выборки, мм.
         "step_down": 4.0,          # Съем по Z за один проход, мм.
         "stock_allowance": 0.0,    # Припуск для выборки, мм.
         "cut_direction": "climb",  # Направление фрезерования.
-        "plunge_feed": 300.0,      # Подача врезания вниз по Z.
-        "approach_feed": 400.0,    # Подача подхода к началу реза.
-        "engage_feed": 400.0,      # Подача входа в материал.
-        "cut_feed": 800.0,         # Рабочая подача резания.
-        "retract_feed": 1000.0,    # Подача отвода инструмента.
-        "departure_feed": 1000.0,  # Подача выхода из реза.
+        "plunge_feed": FEED_RATE_MM_MIN,      # Подача врезания вниз по Z.
+        "approach_feed": FEED_RATE_MM_MIN,    # Подача подхода к началу реза.
+        "engage_feed": FEED_RATE_MM_MIN,      # Подача входа в материал.
+        "cut_feed": FEED_RATE_MM_MIN,         # Рабочая подача резания.
+        "retract_feed": FEED_RATE_MM_MIN,     # Подача отвода инструмента.
+        "departure_feed": FEED_RATE_MM_MIN,   # Подача выхода из реза.
+        "transfer_feed": TRANSFER_FEED_RATE_MM_MIN,  # Подача переходов.
     },
     "paz_dno_zadnst": {
         "depth": 8.0,              # Общая глубина паза, мм.
         "step_down": 4.0,          # Съем по Z за один проход, мм.
         "stock_allowance": 0.0,    # Припуск для паза, мм.
         "cut_direction": "climb",  # Направление фрезерования.
-        "plunge_feed": 300.0,      # Подача врезания вниз по Z.
-        "approach_feed": 400.0,    # Подача подхода к началу реза.
-        "engage_feed": 400.0,      # Подача входа в материал.
-        "cut_feed": 800.0,         # Рабочая подача резания.
-        "retract_feed": 1000.0,    # Подача отвода инструмента.
-        "departure_feed": 1000.0,  # Подача выхода из реза.
+        "plunge_feed": FEED_RATE_MM_MIN,      # Подача врезания вниз по Z.
+        "approach_feed": FEED_RATE_MM_MIN,    # Подача подхода к началу реза.
+        "engage_feed": FEED_RATE_MM_MIN,      # Подача входа в материал.
+        "cut_feed": FEED_RATE_MM_MIN,         # Рабочая подача резания.
+        "retract_feed": FEED_RATE_MM_MIN,     # Подача отвода инструмента.
+        "departure_feed": FEED_RATE_MM_MIN,   # Подача выхода из реза.
+        "transfer_feed": TRANSFER_FEED_RATE_MM_MIN,  # Подача переходов.
     },
     "skvoznoe": {
         "depth": 17.2,             # Общая глубина сквозного реза, мм.
         "step_down": 4.0,          # Съем по Z за один проход, мм.
         "stock_allowance": 0.0,    # Припуск для сквозной операции, мм.
         "cut_direction": "climb",  # Направление фрезерования.
-        "plunge_feed": 300.0,      # Подача врезания вниз по Z.
-        "approach_feed": 400.0,    # Подача подхода к началу реза.
-        "engage_feed": 400.0,      # Подача входа в материал.
-        "cut_feed": 800.0,         # Рабочая подача резания.
-        "retract_feed": 1000.0,    # Подача отвода инструмента.
-        "departure_feed": 1000.0,  # Подача выхода из реза.
+        "plunge_feed": FEED_RATE_MM_MIN,      # Подача врезания вниз по Z.
+        "approach_feed": FEED_RATE_MM_MIN,    # Подача подхода к началу реза.
+        "engage_feed": FEED_RATE_MM_MIN,      # Подача входа в материал.
+        "cut_feed": FEED_RATE_MM_MIN,         # Рабочая подача резания.
+        "retract_feed": FEED_RATE_MM_MIN,     # Подача отвода инструмента.
+        "departure_feed": FEED_RATE_MM_MIN,   # Подача выхода из реза.
+        "transfer_feed": TRANSFER_FEED_RATE_MM_MIN,  # Подача переходов.
     },
     "raskroy": {
         "depth": 16.0,             # Общая глубина раскроя, мм.
         "step_down": 4.0,          # Съем по Z за один проход, мм.
         "stock_allowance": 0.0,    # Припуск для раскроя, мм.
         "cut_direction": "climb",  # Направление фрезерования.
-        "plunge_feed": 300.0,      # Подача врезания вниз по Z.
-        "approach_feed": 400.0,    # Подача подхода к началу реза.
-        "engage_feed": 400.0,      # Подача входа в материал.
-        "cut_feed": 800.0,         # Рабочая подача резания.
-        "retract_feed": 1000.0,    # Подача отвода инструмента.
-        "departure_feed": 1000.0,  # Подача выхода из реза.
+        "plunge_feed": FEED_RATE_MM_MIN,      # Подача врезания вниз по Z.
+        "approach_feed": FEED_RATE_MM_MIN,    # Подача подхода к началу реза.
+        "engage_feed": FEED_RATE_MM_MIN,      # Подача входа в материал.
+        "cut_feed": FEED_RATE_MM_MIN,         # Рабочая подача резания.
+        "retract_feed": FEED_RATE_MM_MIN,     # Подача отвода инструмента.
+        "departure_feed": FEED_RATE_MM_MIN,   # Подача выхода из реза.
+        "transfer_feed": TRANSFER_FEED_RATE_MM_MIN,  # Подача переходов.
     },
 }
 

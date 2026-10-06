@@ -1,8 +1,9 @@
 {
-  "name": "Flat mill D3 outside",
+  "name": "Flat mill D3.175 outside",
   "type": "MTOOL_FLAT",
-  "diameter": 3.0,
-  "flute_length": 9.0,
-  "length": 24.0,
-  "shank_diameter": 3.0
+  "diameter": 3.175,
+  "flute_length": 36.0,
+  "length": 45.0,
+  "shank_diameter": 3.175,
+  "shoulder_length": 36.0
 }
